@@ -641,6 +641,7 @@ def BuildNxpTarget():
         TargetPart('all-clusters', app=NxpApp.ALLCLUSTERS).OnlyIfRe('rt1060|rt1170|rw61x'),
         TargetPart('laundry-washer', app=NxpApp.LAUNDRYWASHER).OnlyIfRe('rt1060|rt1170|rw61x'),
         TargetPart('thermostat', app=NxpApp.THERMOSTAT).OnlyIfRe('rt1060|rt1170|rw61x'),
+        TargetPart('all-devices', app=NxpApp.ALL_DEVICES).OnlyIfRe('rt1060|rt1170|rw61x|mcxw72'),
         TargetPart('unit-test', app=NxpApp.UNIT_TEST)
     ])
 

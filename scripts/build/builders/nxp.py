@@ -96,6 +96,7 @@ class NxpApp(Enum):
     LAUNDRYWASHER = auto()
     THERMOSTAT = auto()
     LOCK_APP = auto()
+    ALL_DEVICES = auto()
     UNIT_TEST = auto()
 
     def ExampleName(self):
@@ -111,6 +112,8 @@ class NxpApp(Enum):
             return "thermostat"
         if self == NxpApp.LOCK_APP:
             return "lock-app"
+        if self == NxpApp.ALL_DEVICES:
+            return "all-devices-app"
         if self == NxpApp.UNIT_TEST:
             return "unit-test"
         raise Exception(f'Unknown app type: {self!r}')
@@ -128,6 +131,8 @@ class NxpApp(Enum):
             return "thermostat-example"
         if self == NxpApp.LOCK_APP:
             return "lock-example"
+        if self == NxpApp.ALL_DEVICES:
+            return "all-devices-example"
         if self == NxpApp.UNIT_TEST:
             return "unit-test-example"
         raise Exception(f'Unknown app type: {self!r}')
