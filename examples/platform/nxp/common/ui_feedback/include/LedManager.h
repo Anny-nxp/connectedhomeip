@@ -22,8 +22,9 @@
 #include "LedOnOff.h"
 #include "LedWidgetInterface.h"
 #include "UserInterfaceFeedback.h"
-
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 #include <app/util/attribute-storage.h>
+#endif
 #include <platform/CHIPDeviceLayer.h>
 
 using namespace chip::NXP::App;

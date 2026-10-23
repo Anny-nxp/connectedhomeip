@@ -207,8 +207,12 @@ if (CONFIG_CHIP_APP_CLI)
         ${EXAMPLE_PLATFORM_NXP_COMMON_DIR}/matter_cli/source/AppCLIBase.cpp
         ${CHIP_ROOT}/examples/shell/shell_common/cmd_misc.cpp
         ${CHIP_ROOT}/examples/shell/shell_common/cmd_otcli.cpp
-        ${CHIP_ROOT}/examples/shell/shell_common/cmd_server.cpp
     )
+    if (NOT CHIP_DATA_MODEL_CODE_DRIVEN_SKIP_EMBER_SHELL_CMDS)
+        target_sources(app PRIVATE
+            ${CHIP_ROOT}/examples/shell/shell_common/cmd_server.cpp
+        )
+    endif()
     if (CONFIG_APP_FREERTOS_OS)
         target_sources(app PRIVATE
             ${EXAMPLE_PLATFORM_NXP_COMMON_DIR}/matter_cli/source/AppCLIFreeRTOS.cpp

@@ -26,7 +26,9 @@
 #include <app/server/Dnssd.h>
 #include <lib/dnssd/Advertiser.h>
 
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 #include <app/util/attribute-storage.h>
+#endif
 #include <data-model-providers/codegen/Instance.h>
 #include <setup_payload/OnboardingCodesUtil.h>
 
@@ -174,11 +176,19 @@ static LastFabricRemovedDelegate sLastFabricRemovedDelegate;
 chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 #endif
 
-#if CONFIG_OPENTHREAD
+// Code-driven applications register NetworkCommissioning through their own
+// CodeDrivenDataModelProvider, so the codegen-coupled Thread network driver
+// defined here (which force-links the ZAP/codegen data model via
+// NetworkCommissioning::Instance) must be excluded, mirroring the WiFi path below.
+#if CONFIG_OPENTHREAD && !defined(CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN)
 app::Clusters::NetworkCommissioning::InstanceAndDriver<DeviceLayer::NetworkCommissioning::GenericThreadDriver>
     sThreadNetworkDriver(CHIP_DEVICE_CONFIG_THREAD_NETWORK_ENDPOINT_ID /*endpointId*/);
 #endif
 
+// Code-driven applications register NetworkCommissioning through their own
+// CodeDrivenDataModelProvider, so the codegen-coupled cluster Instance defined
+// here (which force-links the ZAP/codegen data model) must be excluded.
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 #if CONFIG_CHIP_WIFI || CHIP_DEVICE_CONFIG_ENABLE_WPA
 app::Clusters::NetworkCommissioning::Instance sNetworkCommissioningInstance(0,
                                                                             chip::NXP::App::GetAppTask().GetWifiDriverInstance());
@@ -186,6 +196,7 @@ app::Clusters::NetworkCommissioning::Instance sNetworkCommissioningInstance(0,
 app::Clusters::NetworkCommissioning::Instance
     sNetworkCommissioningInstance(0, chip::NXP::App::GetAppTask().GetEthernetDriverInstance());
 #endif
+#endif // CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 
 #if CONFIG_CHIP_CRYPTO_PSA
 chip::Crypto::PSAOperationalKeystore sPSAOperationalKeystore{};
@@ -247,7 +258,25 @@ void chip::NXP::App::AppTaskBase::InitServer(intptr_t arg)
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 #endif
 
-    initParams.dataModelProvider = app::CodegenDataModelProviderInstance(initParams.persistentStorageDelegate);
+    // Allow a derived AppTask (e.g. a code-driven application) to install its own
+    // DataModelProvider before server init. Only fall back to the ZAP/codegen provider
+    // when the application has not provided one. This keeps existing ZAP-based apps
+    // unchanged while enabling code-driven apps such as all-devices-app.
+    initParams.dataModelProvider = GetAppTask().GetDataModelProvider(initParams);
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
+    // ZAP/codegen based applications fall back to the codegen provider when the
+    // application does not supply its own. Code-driven applications (e.g.
+    // all-devices-app) always provide a CodeDrivenDataModelProvider via
+    // GetDataModelProvider(), and must NOT reference the codegen provider so the
+    // ZAP/ember data model is not force-linked.
+    if (initParams.dataModelProvider == nullptr)
+    {
+        initParams.dataModelProvider = app::CodegenDataModelProviderInstance(initParams.persistentStorageDelegate);
+    }
+#else
+    VerifyOrDieWithMsg(initParams.dataModelProvider != nullptr, AppServer,
+                       "Code-driven app must provide a DataModelProvider via GetDataModelProvider()");
+#endif // CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 
 #if CONFIG_OPENTHREAD
     // Init ZCL Data Model and start server
@@ -354,7 +383,11 @@ CHIP_ERROR chip::NXP::App::AppTaskBase::Init()
         ChipLogError(DeviceLayer, "Error during ThreadStackMgr().InitThreadStack()");
         return err;
     }
+    // Code-driven applications own NetworkCommissioning via their own driver, so the
+    // codegen-coupled sThreadNetworkDriver is not defined and must not be initialized.
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
     TEMPORARY_RETURN_IGNORED sThreadNetworkDriver.Init();
+#endif
 
     err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::CONFIG_THREAD_DEVICE_TYPE);
     if (err != CHIP_NO_ERROR)
@@ -390,6 +423,9 @@ CHIP_ERROR chip::NXP::App::AppTaskBase::Init()
     chip::NXP::App::BleAppMgr().PostMatterStackInit();
 #endif
 
+    // Code-driven applications own NetworkCommissioning via their
+    // CodeDrivenDataModelProvider; the codegen-coupled instance is not defined.
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 #if CONFIG_CHIP_WIFI || CHIP_DEVICE_CONFIG_ENABLE_WPA
     TEMPORARY_RETURN_IGNORED sNetworkCommissioningInstance.Init();
 #ifdef ENABLE_CHIP_SHELL
@@ -398,6 +434,7 @@ CHIP_ERROR chip::NXP::App::AppTaskBase::Init()
 #elif CONFIG_CHIP_ETHERNET
     TEMPORARY_RETURN_IGNORED sNetworkCommissioningInstance.Init();
 #endif
+#endif // CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
     if (err == CHIP_NO_ERROR)
     {

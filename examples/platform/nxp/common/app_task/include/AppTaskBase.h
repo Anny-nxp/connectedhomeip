@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "AppEvent.h"
+#include <app/data-model-provider/Provider.h>
 #include <app/server/Server.h>
 #include <platform/NetworkCommissioning.h>
 
@@ -60,6 +61,19 @@ public:
      *
      */
     virtual void PostInitMatterServerInstance(void){};
+
+    /**
+     * \brief Provide an application-specific DataModelProvider.
+     *
+     * By default returns nullptr, in which case InitServer falls back to the
+     * ZAP/codegen provider (CodegenDataModelProviderInstance). A code-driven
+     * application (e.g. all-devices-app) overrides this to return its own
+     * CodeDrivenDataModelProvider that has been populated with runtime-registered
+     * clusters. The returned provider must outlive the server.
+     *
+     * \return pointer to a DataModelProvider, or nullptr to use the default ZAP provider.
+     */
+    virtual chip::app::DataModel::Provider * GetDataModelProvider(chip::ServerInitParams & initParams) { return nullptr; }
 
     /**
      * \brief This function could be overridden in order to execute code before matter stack init function.

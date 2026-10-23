@@ -24,12 +24,13 @@
  **/
 #include "CommonDeviceCallbacks.h"
 #include "AppTaskBase.h"
-
+#ifndef CONFIG_CHIP_DATA_MODEL_CODE_DRIVEN
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
-#include <app/server/Dnssd.h>
 #include <app/util/attribute-storage.h>
+#endif
+#include <app/server/Dnssd.h>
 #include <app/util/attribute-table.h>
 
 #include <lib/support/CodeUtils.h>
